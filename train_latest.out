@@ -1,0 +1,137 @@
+loading Roboflow workspace...
+loading Roboflow project...
+Using device: cuda
+✅ Dataset split complete: train_split.json and valid_split.json created.
+✅ category_id=2 changed to 0 in both split files.
+Loading training dataset...
+Loading test dataset...
+Train dataset size: 7538
+Test dataset size: 1885
+Model architecture verification:
+Encoder head: in_features=256, out_features=1
+Decoder class_embed[0]: in_features=256, out_features=1
+Decoder class_embed[1]: in_features=256, out_features=1
+Decoder class_embed[2]: in_features=256, out_features=1
+Decoder class_embed[3]: in_features=256, out_features=1
+Decoder class_embed[4]: in_features=256, out_features=1
+Decoder class_embed[5]: in_features=256, out_features=1
+Starting training...
+🆕 No checkpoint found. Starting fresh training...
+{'loss': 53.6518, 'grad_norm': 14.750955581665039, 'learning_rate': 7e-06, 'epoch': 0.17}
+{'loss': 49.1395, 'grad_norm': 19.422876358032227, 'learning_rate': 1.7000000000000003e-05, 'epoch': 0.34}
+{'loss': 46.8087, 'grad_norm': 16.347909927368164, 'learning_rate': 2.7e-05, 'epoch': 0.51}
+{'loss': 45.9634, 'grad_norm': 15.588226318359375, 'learning_rate': 3.7e-05, 'epoch': 0.68}
+{'loss': 44.9272, 'grad_norm': 15.834833145141602, 'learning_rate': 4.6e-05, 'epoch': 0.85}
+Augmentation removed all boxes for image 2434. Using original.
+Augmentation removed all boxes for image 5753. Using original.
+Skipping corrupted sample 2888: Expected x_max for bbox [0.6148897 0.5443219 1.0000528 0.9298346 0.       ] to be in the range [0.0, 1.0], got 1.000052809715271.
+Augmentation removed all boxes for image 7467. Using original.
+Augmentation removed all boxes for image 9026. Using original.
+Skipping corrupted sample 7131: x_max is less than or equal to x_min for bbox [0.         0.11029412 0.         0.1245915  0.        ].
+Skipping corrupted sample 722: Expected x_max for bbox [0.5948989 0.5026552 1.0000483 0.9273938 0.       ] to be in the range [0.0, 1.0], got 1.000048279762268.
+Skipping corrupted sample 7653: Expected x_max for bbox [0.6316636  0.40931374 1.0000287  0.92729986 0.        ] to be in the range [0.0, 1.0], got 1.0000287294387817.
+Augmentation removed all boxes for image 6303. Using original.
+Augmentation removed all boxes for image 7432. Using original.
+Skipping corrupted sample 5492: Expected x_max for bbox [0.6168428  0.33374184 1.0000505  0.89067    0.        ] to be in the range [0.0, 1.0], got 1.0000505447387695.
+Skipping corrupted sample 6052: Expected x_max for bbox [0.57295495 0.5433006  1.0000184  0.9414624  0.        ] to be in the range [0.0, 1.0], got 1.0000183582305908.
+Skipping corrupted sample 6242: Expected x_max for bbox [0.579159   0.43995097 1.0000379  0.90030026 0.        ] to be in the range [0.0, 1.0], got 1.0000379085540771.
+Skipping corrupted sample 4082: Expected x_max for bbox [0.5919118  0.51245916 1.0000355  0.91838235 0.        ] to be in the range [0.0, 1.0], got 1.0000355243682861.
+Skipping corrupted sample 299: Expected x_max for bbox [0.58513325 0.3120915  1.0000345  0.9361969  0.        ] to be in the range [0.0, 1.0], got 1.0000344514846802.
+Augmentation removed all boxes for image 8959. Using original.
+Skipping corrupted sample 1493: Expected x_max for bbox [0.62120867 0.45383987 1.0000355  0.9246957  0.        ] to be in the range [0.0, 1.0], got 1.0000355243682861.
+Augmentation removed all boxes for image 6802. Using original.
+Skipping corrupted sample 9020: Expected x_max for bbox [0.6181066 0.4877451 1.0000298 0.9075123 0.       ] to be in the range [0.0, 1.0], got 1.0000298023223877.
+Skipping corrupted sample 7260: Expected x_max for bbox [0.6561351  0.41646242 1.0000505  0.8339297  0.        ] to be in the range [0.0, 1.0], got 1.0000505447387695.
+Skipping corrupted sample 2002: Expected x_max for bbox [0.579159   0.31740198 1.0000379  0.90927905 0.        ] to be in the range [0.0, 1.0], got 1.0000379085540771.
+Skipping corrupted sample 6132: Expected x_max for bbox [0.63017005 0.55330884 1.0000253  0.89120096 0.        ] to be in the range [0.0, 1.0], got 1.0000252723693848.
+Skipping corrupted sample 1076: Expected x_max for bbox [0.59455425 0.24387255 1.0000575  0.93829864 0.        ] to be in the range [0.0, 1.0], got 1.0000574588775635.
+Augmentation removed all boxes for image 3054. Using original.
+Skipping corrupted sample 4930: Expected x_max for bbox [0.64579505 0.3272059  1.0000426  0.9346916  0.        ] to be in the range [0.0, 1.0], got 1.0000425577163696.
+Skipping corrupted sample 1882: y_max is less than or equal to y_min for bbox [0.22863051 0.         0.22920497 0.         0.        ].
+Skipping corrupted sample 1566: Expected x_max for bbox [0.61925554 0.5461601  1.0000253  0.92322505 0.        ] to be in the range [0.0, 1.0], got 1.0000252723693848.
+Skipping corrupted sample 4584: Expected x_max for bbox [0.6000689  0.51613563 1.0000161  0.79957926 0.        ] to be in the range [0.0, 1.0], got 1.0000160932540894.
+Skipping corrupted sample 3736: Expected x_max for bbox [0.62902117 0.498366   1.0000391  0.86676264 0.        ] to be in the range [0.0, 1.0], got 1.0000391006469727.
+Skipping corrupted sample 4816: Expected x_max for bbox [0.6148897  0.5079657  1.0000528  0.90708536 0.        ] to be in the range [0.0, 1.0], got 1.000052809715271.
+Augmentation removed all boxes for image 5285. Using original.
+Augmentation removed all boxes for image 2804. Using original.
+Skipping corrupted sample 5316: Expected x_max for bbox [0.62902117 0.33803105 1.0000391  0.91229576 0.        ] to be in the range [0.0, 1.0], got 1.0000391006469727.
+Augmentation removed all boxes for image 7911. Using original.
+Augmentation removed all boxes for image 4623. Using original.
+Skipping corrupted sample 6945: Expected x_max for bbox [0.6094899  0.48978758 1.0000114  0.92969567 0.        ] to be in the range [0.0, 1.0], got 1.0000114440917969.
+Augmentation removed all boxes for image 6467. Using original.
+Skipping corrupted sample 5964: Expected x_max for bbox [0.625      0.50142974 1.0000161  0.84694856 0.        ] to be in the range [0.0, 1.0], got 1.0000160932540894.
+Augmentation removed all boxes for image 6345. Using original.
+Augmentation removed all boxes for image 891. Using original.
+Skipping corrupted sample 4063: Expected x_max for bbox [0.85075825 0.28349674 1.0000287  0.6023284  0.        ] to be in the range [0.0, 1.0], got 1.0000287294387817.
+Skipping corrupted sample 5809: Expected x_max for bbox [0.71518844 0.51613563 1.0000149  0.8303676  0.        ] to be in the range [0.0, 1.0], got 1.0000149011611938.
+Augmentation removed all boxes for image 2786. Using original.
+Skipping corrupted sample 4976: Expected x_max for bbox [0.5179228  0.42177287 1.000031   0.92974263 0.        ] to be in the range [0.0, 1.0], got 1.0000309944152832.
+Augmentation removed all boxes for image 8881. Using original.
+Skipping corrupted sample 7469: Expected x_max for bbox [0.60420495 0.5308415  1.0000173  0.94443625 0.        ] to be in the range [0.0, 1.0], got 1.0000172853469849.
+Skipping corrupted sample 3255: Expected x_max for bbox [0.6881893  0.43137255 1.0000426  0.9299142  0.        ] to be in the range [0.0, 1.0], got 1.0000425577163696.
+Augmentation removed all boxes for image 6314. Using original.
+Augmentation removed all boxes for image 512. Using original.
+Skipping corrupted sample 9228: Expected x_max for bbox [0.46691176 0.5216503  1.0000436  0.83232844 0.        ] to be in the range [0.0, 1.0], got 1.0000436305999756.
+Skipping corrupted sample 585: Expected x_max for bbox [0.60581344 0.48325163 1.0000448  0.9029963  0.        ] to be in the range [0.0, 1.0], got 1.000044822692871.
+Skipping corrupted sample 5749: Expected x_max for bbox [0.70611215 0.4540441  1.0000196  0.912455   0.        ] to be in the range [0.0, 1.0], got 1.0000195503234863.
+Augmentation removed all boxes for image 8299. Using original.
+Skipping corrupted sample 4490: Expected x_max for bbox [0.56950825 0.51245916 1.0000184  0.9181535  0.        ] to be in the range [0.0, 1.0], got 1.0000183582305908.
+Skipping corrupted sample 5148: Expected x_max for bbox [0.528148   0.45363563 1.0000517  0.9162521  0.        ] to be in the range [0.0, 1.0], got 1.000051736831665.
+Skipping corrupted sample 1048: Expected x_max for bbox [0.579159   0.5102124  1.0000379  0.88438725 0.        ] to be in the range [0.0, 1.0], got 1.0000379085540771.
+Augmentation removed all boxes for image 8312. Using original.
+Augmentation removed all boxes for image 215. Using original.
+Skipping corrupted sample 3036: Expected x_max for bbox [0.6174173 0.4877451 1.0000552 0.9111765 0.       ] to be in the range [0.0, 1.0], got 1.000055193901062.
+Augmentation removed all boxes for image 6059. Using original.
+Skipping corrupted sample 2543: Expected x_max for bbox [0.58995867 0.53267974 1.0000253  0.9009988  0.        ] to be in the range [0.0, 1.0], got 1.0000252723693848.
+Skipping corrupted sample 9314: Expected x_max for bbox [0.62764245 0.54881537 1.0000494  0.8731005  0.        ] to be in the range [0.0, 1.0], got 1.000049352645874.
+Augmentation removed all boxes for image 1852. Using original.
+Skipping corrupted sample 6415: Expected x_max for bbox [0.5534237  0.34681374 1.0000173  0.936248   0.        ] to be in the range [0.0, 1.0], got 1.0000172853469849.
+Skipping corrupted sample 7825: Expected x_max for bbox [0.7727482 0.4193219 1.0000552 0.738029  0.       ] to be in the range [0.0, 1.0], got 1.000055193901062.
+Skipping corrupted sample 8144: Expected x_max for bbox [0.6094899  0.4074755  1.0000114  0.95573527 0.        ] to be in the range [0.0, 1.0], got 1.0000114440917969.
+Augmentation removed all boxes for image 7164. Using original.
+Skipping corrupted sample 6393: Expected x_max for bbox [0.5957031  0.39562908 1.0000471  0.752886   0.        ] to be in the range [0.0, 1.0], got 1.0000470876693726.
+Skipping corrupted sample 6911: Expected x_max for bbox [0.61925554 0.5245098  1.0000253  0.91240805 0.        ] to be in the range [0.0, 1.0], got 1.0000252723693848.
+Augmentation removed all boxes for image 1593. Using original.
+Skipping corrupted sample 8261: Expected x_max for bbox [0.6168428 0.5114379 1.0000505 0.9188399 0.       ] to be in the range [0.0, 1.0], got 1.0000505447387695.
+Skipping corrupted sample 4846: Expected x_max for bbox [0.60213697 0.53063726 1.0000552  0.9048121  0.        ] to be in the range [0.0, 1.0], got 1.000055193901062.
+Skipping corrupted sample 4985: Expected x_max for bbox [0.6153493  0.5198121  1.0000149  0.88113356 0.        ] to be in the range [0.0, 1.0], got 1.0000149011611938.
+Augmentation removed all boxes for image 9033. Using original.
+Augmentation removed all boxes for image 8051. Using original.
+Augmentation removed all boxes for image 5686. Using original.
+Skipping corrupted sample 1459: Expected x_max for bbox [0.58513325 0.5114379  1.0000345  0.9470118  0.        ] to be in the range [0.0, 1.0], got 1.0000344514846802.
+Augmentation removed all boxes for image 8111. Using original.
+Skipping corrupted sample 2790: Expected x_max for bbox [0.6046645  0.39460784 1.0000322  0.9116503  0.        ] to be in the range [0.0, 1.0], got 1.0000321865081787.
+Augmentation removed all boxes for image 6451. Using original.
+Skipping corrupted sample 4134: Expected x_max for bbox [0.6429228  0.53513074 1.0000219  0.834471   0.        ] to be in the range [0.0, 1.0], got 1.0000219345092773.
+Augmentation removed all boxes for image 4062. Using original.
+Augmentation removed all boxes for image 6287. Using original.
+Skipping corrupted sample 1560: Expected x_max for bbox [0.6046645  0.53063726 1.0000322  0.93656045 0.        ] to be in the range [0.0, 1.0], got 1.0000321865081787.
+Skipping corrupted sample 8976: Expected x_max for bbox [0.5938649  0.5173611  1.0000206  0.92226714 0.        ] to be in the range [0.0, 1.0], got 1.0000206232070923.
+Augmentation removed all boxes for image 7197. Using original.
+Skipping corrupted sample 6183: Expected x_max for bbox [0.6094899  0.5026552  1.0000114  0.92956084 0.        ] to be in the range [0.0, 1.0], got 1.0000114440917969.
+Augmentation removed all boxes for image 5054. Using original.
+Skipping corrupted sample 465: Expected x_max for bbox [0.5919118  0.55780226 1.0000355  0.9024959  0.        ] to be in the range [0.0, 1.0], got 1.0000355243682861.
+Skipping corrupted sample 2295: Expected x_max for bbox [0.636489   0.4101307  1.0000517  0.84149307 0.        ] to be in the range [0.0, 1.0], got 1.000051736831665.
+Augmentation removed all boxes for image 8618. Using original.
+Skipping corrupted sample 8525: Expected x_max for bbox [0.68830425 0.45302287 1.000046   0.88167894 0.        ] to be in the range [0.0, 1.0], got 1.0000460147857666.
+Skipping corrupted sample 4071: Expected x_max for bbox [0.6551011 0.4328023 1.0000345 0.8330637 0.       ] to be in the range [0.0, 1.0], got 1.0000344514846802.
+Augmentation removed all boxes for image 1662. Using original.
+Augmentation removed all boxes for image 8182. Using original.
+Skipping corrupted sample 6994: Expected x_max for bbox [0.5919118  0.42626634 1.0000355  0.9342361  0.        ] to be in the range [0.0, 1.0], got 1.0000355243682861.
+Augmentation removed all boxes for image 5939. Using original.
+Augmentation removed all boxes for image 9273. Using original.
+Skipping corrupted sample 4296: Expected x_max for bbox [0.58513325 0.47242647 1.0000345  0.9188358  0.        ] to be in the range [0.0, 1.0], got 1.0000344514846802.
+Skipping corrupted sample 5004: Expected x_max for bbox [0.60420495 0.4814134  1.0000173  0.9196998  0.        ] to be in the range [0.0, 1.0], got 1.0000172853469849.
+Augmentation removed all boxes for image 8870. Using original.
+Augmentation removed all boxes for image 9041. Using original.
+Augmentation removed all boxes for image 4961. Using original.
+Skipping corrupted sample 3413: Expected x_max for bbox [0.59731156 0.528799   1.000023   0.93620104 0.        ] to be in the range [0.0, 1.0], got 1.0000230073928833.
+Augmentation removed all boxes for image 2025. Using original.
+Augmentation removed all boxes for image 522. Using original.
+Augmentation removed all boxes for image 1304. Using original.
+Augmentation removed all boxes for image 1749. Using original.
+Skipping corrupted sample 8674: Expected x_max for bbox [0.6048943  0.4936683  1.0000402  0.91555965 0.        ] to be in the range [0.0, 1.0], got 1.0000401735305786.
+Skipping corrupted sample 8660: Expected x_max for bbox [0.58168656 0.47630718 1.0000149  0.9343872  0.        ] to be in the range [0.0, 1.0], got 1.0000149011611938.
+Skipping corrupted sample 1553: Expected x_max for bbox [0.6070772 0.3813317 1.0000368 0.9209232 0.       ] to be in the range [0.0, 1.0], got 1.0000368356704712.
+Augmentation removed all boxes for image 2556. Using original.
+{'eval_loss': 24.194843292236328, 'eval_runtime': 2052.0222, 'eval_samples_per_second': 0.919, 'eval_steps_per_second': 0.015, 'epoch': 0.85}
