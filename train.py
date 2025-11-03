@@ -13,10 +13,10 @@ from roboflow import Roboflow
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from datasets import Dataset
 import os
-import psutil
-import subprocess
 from PIL import Image
 import random
+import psutil
+import subprocess
 
 # def compute_metrics(eval_pred):
 #     predictions, references = eval_pred
@@ -24,35 +24,26 @@ import random
 #     metric.update(predictions, references)
 #     return metric.compute()
 
+
 def compute_metrics(eval_pred):
     """
     Calculate accuracy for object detection.
     For RT-DETR, this computes detection accuracy.
     """
     predictions, labels = eval_pred
-    
-    # For object detection, you typically compare:
-    # - Predicted boxes vs ground truth boxes
-    # - Using IoU (Intersection over Union) threshold
-    
-    # Simple approach: count correct detections
-    # (Adjust based on your specific needs)
-    
+
     if isinstance(predictions, tuple):
         logits = predictions[0]
     else:
         logits = predictions
-    
-    # Get predicted class (argmax)
+
     preds = np.argmax(logits, axis=-1)
-    
-    # Flatten and compare
+
     preds_flat = preds.flatten()
     labels_flat = labels.flatten()
-    
-    # Calculate accuracy
+
     accuracy = accuracy_score(labels_flat, preds_flat)
-    
+
     return {"accuracy": accuracy}
 
 
@@ -62,6 +53,46 @@ class NanLossCallback(TrainerCallback):
         if logs and "loss" in logs and torch.isnan(torch.tensor(logs["loss"])):
             print("NaN loss detected. Stopping training.")
             control.should_training_stop = True
+
+
+def print_system_stats():
+    """Monitor CPU, RAM, and GPU utilization."""
+    print("\n=== System Stats ===")
+    print(f"CPU utilization: {psutil.cpu_percent()}%")
+    print(f"RAM usage: {psutil.virtual_memory().percent}%")
+
+    if torch.cuda.is_available():
+        gpu_mem_reserved = torch.cuda.memory_reserved() / 1e9
+        gpu_mem_allocated = torch.cuda.memory_allocated() / 1e9
+        print(f"GPU reserved memory (GB): {gpu_mem_reserved:.2f}")
+        print(f"GPU allocated memory (GB): {gpu_mem_allocated:.2f}")
+
+        try:
+            result = subprocess.run(
+                [
+                    "nvidia-smi",
+                    "--query-gpu=utilization.gpu,memory.used",
+                    "--format=csv,nounits,noheader",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            print(f"GPU utilization & memory: {result.stdout.strip()}")
+        except Exception as e:
+            print(f"nvidia-smi error: {e}")
+    print("===================\n")
+
+
+class SystemStatsCallback(TrainerCallback):
+    """Log system stats every N steps."""
+
+    def __init__(self, log_every_n_steps=50):
+        self.log_every_n_steps = log_every_n_steps
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if state.global_step % self.log_every_n_steps == 0:
+            print_system_stats()
 
 
 # Filter annotations to keep only category_id == 2 (hummingbird)
@@ -97,7 +128,7 @@ filter_hummingbird_annotations(
 # getting data from Roboflow
 
 
-# should api key be hidden somehow? Security issue.
+# should api key be hidden? Security issue.
 rf = Roboflow(api_key="emHcbgLhITmU2KHvC6I7")
 project = rf.workspace("humming-bird-detection").project(
     "label-birdfeeder-camera-observations"
@@ -152,7 +183,7 @@ class RTDetrDataCollatorWithAugmentation:
                         ],
                         p=0.3,
                     ),
-                    #A.GaussNoise(var_limit=(0.01, 0.05), p=0.2),
+                    # A.GaussNoise(var_limit=(0.01, 0.05), p=0.2),
                     A.HueSaturationValue(
                         hue_shift_limit=10,
                         sat_shift_limit=20,
@@ -185,6 +216,7 @@ class RTDetrDataCollatorWithAugmentation:
                 orig_image_np = image_np.copy()  # Save original image
 
                 bboxes = example["objects"]["bbox"]
+                bboxes = np.clip(bboxes, 0.0, 1.0)
                 category_ids = example["objects"]["category_id"]
                 orig_bboxes = bboxes.copy()  # Save original bboxes
                 orig_category_ids = category_ids.copy()  # Save original categories
@@ -218,7 +250,7 @@ class RTDetrDataCollatorWithAugmentation:
                     "image_id": example["image_id"],
                     "annotations": [
                         {
-                            "bbox":self.xyxy_to_xywh(box),
+                            "bbox": self.xyxy_to_xywh(box),
                             "category_id": label,
                             "area": max(0.0, (box[2] - box[0]) * (box[3] - box[1])),
                             "iscrowd": 0,
@@ -374,12 +406,11 @@ model.model.backbone.load_state_dict(base_model.model.backbone.state_dict())
 PRIOR_PROB = 0.01
 bias_value = -math.log((1 - PRIOR_PROB) / PRIOR_PROB)
 
-# Initialize encoder score head
+
 model.enc_score_head = torch.nn.Linear(base_model.model.enc_score_head.in_features, 1)
 torch.nn.init.normal_(model.model.enc_score_head.weight, std=0.01)
 torch.nn.init.constant_(model.model.enc_score_head.bias, bias_value)
 
-# Initialize decoder class embeddings
 for i in range(len(model.model.decoder.class_embed)):
     model.model.decoder.class_embed[i] = torch.nn.Linear(
         base_model.model.decoder.class_embed[i].in_features, 1
@@ -418,39 +449,37 @@ for i, layer in enumerate(model.model.decoder.class_embed):
 # IMPROVED TRAINING ARGUMENTS
 training_args = TrainingArguments(
     output_dir="./outputs",
-    per_device_train_batch_size=64,  # Reduced for better gradient updates
+    per_device_train_batch_size=64,
     per_device_eval_batch_size=64,
     num_train_epochs=50,  # Reduced from 70
     learning_rate=5e-4,
     max_grad_norm=1.0,
-    weight_decay=0.01,  # Increased regularization
+    weight_decay=0.01,
     logging_steps=10,
     save_strategy="steps",
-    save_steps=100,  # More frequent saves
+    save_steps=100,
     remove_unused_columns=False,
     dataloader_num_workers=8,
     save_total_limit=5,
     load_best_model_at_end=True,
     eval_strategy="steps",
-    eval_steps=50,  # More frequent evaluation
-    warmup_steps=500,  # Reduced warmup
+    eval_steps=50,
+    warmup_steps=500,
     warmup_ratio=0.1,
-    lr_scheduler_type="cosine",  # Better LR scheduling
+    lr_scheduler_type="cosine",
     report_to="none",
-    gradient_accumulation_steps=2,  # Effective batch size = 4
+    gradient_accumulation_steps=2,
     dataloader_drop_last=False,
     seed=42,
-    fp16=torch.cuda.is_available(),  # Mixed precision for faster training
+    fp16=torch.cuda.is_available(),
     metric_for_best_model="eval_loss",
     greater_is_better=False,
     tf32=False,
     torch_compile=False,
     dataloader_pin_memory=True,
-   # gradient_checkpointing=True,
-    # compute_metrics=compute_metrics,
 )
 
-# Initialize improved data collators
+
 train_data_collator = RTDetrDataCollatorWithAugmentation(
     processor=processor, is_training=True
 )
@@ -464,8 +493,9 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=test_dataset,
     data_collator=train_data_collator,
-   # compute_metrics=compute_metrics,  # Add this
+    callbacks=[SystemStatsCallback(log_every_n_steps=50)],
 )
+
 
 def train_with_checkpoint_resume(trainer, training_args):
     """Train and automatically resume from checkpoint if it exists."""
@@ -474,8 +504,7 @@ def train_with_checkpoint_resume(trainer, training_args):
 
     # Find latest checkpoint
     checkpoints = sorted(
-        checkpoint_dir.glob("checkpoint-*"),
-        key=lambda p: int(p.name.split("-")[-1])
+        checkpoint_dir.glob("checkpoint-*"), key=lambda p: int(p.name.split("-")[-1])
     )
 
     if checkpoints:
@@ -485,6 +514,8 @@ def train_with_checkpoint_resume(trainer, training_args):
     else:
         print("🆕 No checkpoint found. Starting fresh training...")
         trainer.train()
+
+
 """
 last_checkpoint = None
 if os.path.isdir(training_args.output_dir):
@@ -507,7 +538,7 @@ trainer = Trainer(
 )
 """
 print("Starting training...")
-#trainer.train()
+# trainer.train()
 train_with_checkpoint_resume(trainer, training_args)
 
 # from pathlib import Path
@@ -622,4 +653,3 @@ def evaluate_model_improved():
 
 print("Evaluating model...")
 evaluate_model_improved()
-
