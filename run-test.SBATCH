@@ -2,10 +2,10 @@
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=16
 #SBATCH --time=15:00:00
-#SBATCH --mem=80GB
-#SBATCH --gres=gpu
+#SBATCH --mem=85GB
+#SBATCH --gres=gpu:a100:1
 #SBATCH --job-name=trainHbird
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=END

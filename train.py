@@ -129,13 +129,14 @@ filter_hummingbird_annotations(
 
 
 # should api key be hidden? Security issue.
+"""
 rf = Roboflow(api_key="emHcbgLhITmU2KHvC6I7")
 project = rf.workspace("humming-bird-detection").project(
     "label-birdfeeder-camera-observations"
 )
 version = project.version(3)
 dataset = version.download("coco")
-
+"""
 from transformers import (
     RTDetrForObjectDetection,
     RTDetrConfig,
@@ -216,7 +217,7 @@ class RTDetrDataCollatorWithAugmentation:
                 orig_image_np = image_np.copy()  # Save original image
 
                 bboxes = example["objects"]["bbox"]
-                bboxes = np.clip(bboxes, 0.0, 1.0)
+                # bboxes = np.clip(bboxes, 0.0, 1.0)
                 category_ids = example["objects"]["category_id"]
                 orig_bboxes = bboxes.copy()  # Save original bboxes
                 orig_category_ids = category_ids.copy()  # Save original categories
@@ -233,6 +234,15 @@ class RTDetrDataCollatorWithAugmentation:
                         image_np = transformed["image"]
                         bboxes = transformed["bboxes"]
                         category_ids = transformed["category_ids"]
+                        bboxes = [
+                            [
+                                max(0.0, min(1.0, x1)),
+                                max(0.0, min(1.0, y1)),
+                                max(0.0, min(1.0, x2)),
+                                max(0.0, min(1.0, y2)),
+                            ]
+                            for x1, y1, x2, y2 in bboxes
+                        ]
                     else:
                         # Restore original image and boxes
                         image_np = orig_image_np
@@ -366,6 +376,8 @@ def load_coco_dataset(image_dir, annotation_file):
         objects = {"bbox": [], "category_id": [], "area": [], "iscrowd": []}
         for ann in image_annotations:
             x, y, w, h = ann["bbox"]
+            if w <= 1e-5 or h <= 1e-5 or x == (x + w) or y == (y + h):
+                continue
             objects["bbox"].append([x, y, x + w, y + h])
             objects["category_id"].append(0)
             objects["area"].append(ann.get("area", w * h))
@@ -449,21 +461,21 @@ for i, layer in enumerate(model.model.decoder.class_embed):
 # IMPROVED TRAINING ARGUMENTS
 training_args = TrainingArguments(
     output_dir="./outputs",
-    per_device_train_batch_size=64,
-    per_device_eval_batch_size=64,
-    num_train_epochs=50,  # Reduced from 70
+    per_device_train_batch_size=128,
+    per_device_eval_batch_size=128,
+    num_train_epochs=70,
     learning_rate=5e-4,
     max_grad_norm=1.0,
     weight_decay=0.01,
     logging_steps=10,
     save_strategy="steps",
-    save_steps=100,
+    save_steps=500,
     remove_unused_columns=False,
-    dataloader_num_workers=8,
+    dataloader_num_workers=16,
     save_total_limit=5,
     load_best_model_at_end=True,
     eval_strategy="steps",
-    eval_steps=50,
+    eval_steps=500,
     warmup_steps=500,
     warmup_ratio=0.1,
     lr_scheduler_type="cosine",
