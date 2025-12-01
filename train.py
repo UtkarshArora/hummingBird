@@ -461,8 +461,8 @@ for i, layer in enumerate(model.model.decoder.class_embed):
 # IMPROVED TRAINING ARGUMENTS
 training_args = TrainingArguments(
     output_dir="./outputs",
-    per_device_train_batch_size=128,
-    per_device_eval_batch_size=128,
+    per_device_train_batch_size=64,
+    per_device_eval_batch_size=64,
     num_train_epochs=70,
     learning_rate=5e-4,
     max_grad_norm=1.0,
@@ -471,7 +471,7 @@ training_args = TrainingArguments(
     save_strategy="steps",
     save_steps=500,
     remove_unused_columns=False,
-    dataloader_num_workers=16,
+    dataloader_num_workers=8,
     save_total_limit=5,
     load_best_model_at_end=True,
     eval_strategy="steps",
@@ -488,7 +488,7 @@ training_args = TrainingArguments(
     greater_is_better=False,
     tf32=False,
     torch_compile=False,
-    dataloader_pin_memory=True,
+    dataloader_pin_memory=False,
 )
 
 
@@ -631,6 +631,9 @@ def evaluate_model_improved():
             if len(results["boxes"]) > 0 and results["scores"].max() > best_score:
                 best_results = results
                 best_score = results["scores"].max()
+
+        del results
+        torch.cuda.empty_cache()
 
         if best_results is not None:
             pred_boxes = best_results["boxes"].cpu().numpy()
