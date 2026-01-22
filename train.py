@@ -25,26 +25,26 @@ import subprocess
 #     return metric.compute()
 
 
-def compute_metrics(eval_pred):
-    """
-    Calculate accuracy for object detection.
-    For RT-DETR, this computes detection accuracy.
-    """
-    predictions, labels = eval_pred
+# def compute_metrics(eval_pred):
+#     """
+#     Calculate accuracy for object detection.
+#     For RT-DETR, this computes detection accuracy.
+#     """
+#     predictions, labels = eval_pred
 
-    if isinstance(predictions, tuple):
-        logits = predictions[0]
-    else:
-        logits = predictions
+#     if isinstance(predictions, tuple):
+#         logits = predictions[0]
+#     else:
+#         logits = predictions
 
-    preds = np.argmax(logits, axis=-1)
+#     preds = np.argmax(logits, axis=-1)
 
-    preds_flat = preds.flatten()
-    labels_flat = labels.flatten()
+#     preds_flat = preds.flatten()
+#     labels_flat = labels.flatten()
 
-    accuracy = accuracy_score(labels_flat, preds_flat)
+#     accuracy = accuracy_score(labels_flat, preds_flat)
 
-    return {"accuracy": accuracy}
+#     return {"accuracy": accuracy}
 
 
 # class for detecting if loss is NaN, because it should be a number
@@ -160,7 +160,8 @@ class RTDetrDataCollatorWithAugmentation:
         return [x1, y1, max(0.0, x2 - x1), max(0.0, y2 - y1)]
 
     # Transforming the images while training so that the model learns better
-    def __init__(self, processor, is_training=True):
+    # removing the transformations for now, setting is_training to False
+    def __init__(self, processor, is_training=False):
         self.processor = processor
         self.is_training = is_training
 
@@ -214,13 +215,15 @@ class RTDetrDataCollatorWithAugmentation:
             try:
                 image = Image.open(example["image_path"]).convert("RGB")
                 image_np = np.array(image)
-                orig_image_np = image_np.copy()  # Save original image
+                orig_image_np = image_np.copy()
+
+                # Get image dimensions for clipping
+                img_height, img_width = image_np.shape[:2]
 
                 bboxes = example["objects"]["bbox"]
-                # bboxes = np.clip(bboxes, 0.0, 1.0)
                 category_ids = example["objects"]["category_id"]
-                orig_bboxes = bboxes.copy()  # Save original bboxes
-                orig_category_ids = category_ids.copy()  # Save original categories
+                orig_bboxes = bboxes.copy()
+                orig_category_ids = category_ids.copy()
 
                 # Apply augmentation only during training
                 apply_aug = self.is_training and torch.is_grad_enabled()
@@ -229,27 +232,29 @@ class RTDetrDataCollatorWithAugmentation:
                         image=image_np, bboxes=bboxes, category_ids=category_ids
                     )
 
-                    # Only use augmented result if there's at least one valid box
                     if len(transformed["bboxes"]) > 0:
                         image_np = transformed["image"]
                         bboxes = transformed["bboxes"]
                         category_ids = transformed["category_ids"]
+
+                        # Get NEW image dimensions after augmentation
+                        aug_height, aug_width = image_np.shape[:2]
+
+                        # FIXED: Clip to actual pixel dimensions, not [0,1]
                         bboxes = [
                             [
-                                max(0.0, min(1.0, x1)),
-                                max(0.0, min(1.0, y1)),
-                                max(0.0, min(1.0, x2)),
-                                max(0.0, min(1.0, y2)),
+                                max(0.0, min(aug_width, x1)),
+                                max(0.0, min(aug_height, y1)),
+                                max(0.0, min(aug_width, x2)),
+                                max(0.0, min(aug_height, y2)),
                             ]
                             for x1, y1, x2, y2 in bboxes
                         ]
                     else:
-                        # Restore original image and boxes
                         image_np = orig_image_np
                         bboxes = orig_bboxes
                         category_ids = orig_category_ids
 
-                        # Reduce log spam - only show 1% of warnings
                         if random.random() < 0.01:
                             print(
                                 f"Augmentation removed all boxes for image {example['image_id']}. Using original."
@@ -269,7 +274,6 @@ class RTDetrDataCollatorWithAugmentation:
                     ],
                 }
 
-                # Process the image and annotations
                 encoding = self.processor(
                     images=image_np, annotations=target, return_tensors="pt"
                 )
@@ -287,6 +291,88 @@ class RTDetrDataCollatorWithAugmentation:
             return {}
 
         return {"pixel_values": torch.stack(pixel_values), "labels": labels}
+
+    # def __call__(self, batch):
+    #     pixel_values = []
+    #     labels = []
+
+    #     for example in batch:
+    #         try:
+    #             image = Image.open(example["image_path"]).convert("RGB")
+    #             image_np = np.array(image)
+    #             orig_image_np = image_np.copy()  # Save original image
+
+    #             bboxes = example["objects"]["bbox"]
+    #             # bboxes = np.clip(bboxes, 0.0, 1.0)
+    #             category_ids = example["objects"]["category_id"]
+    #             orig_bboxes = bboxes.copy()  # Save original bboxes
+    #             orig_category_ids = category_ids.copy()  # Save original categories
+
+    #             # Apply augmentation only during training
+    #             apply_aug = self.is_training and torch.is_grad_enabled()
+    #             if apply_aug and self.transform:
+    #                 transformed = self.transform(
+    #                     image=image_np, bboxes=bboxes, category_ids=category_ids
+    #                 )
+
+    #                 # Only use augmented result if there's at least one valid box
+    #                 if len(transformed["bboxes"]) > 0:
+    #                     image_np = transformed["image"]
+    #                     bboxes = transformed["bboxes"]
+    #                     category_ids = transformed["category_ids"]
+    #                     bboxes = [
+    #                         [
+    #                             max(0.0, min(1.0, x1)),
+    #                             max(0.0, min(1.0, y1)),
+    #                             max(0.0, min(1.0, x2)),
+    #                             max(0.0, min(1.0, y2)),
+    #                         ]
+    #                         for x1, y1, x2, y2 in bboxes
+    #                     ]
+    #                 else:
+    #                     # Restore original image and boxes
+    #                     image_np = orig_image_np
+    #                     bboxes = orig_bboxes
+    #                     category_ids = orig_category_ids
+
+    #                     # Reduce log spam - only show 1% of warnings
+    #                     if random.random() < 0.01:
+    #                         print(
+    #                             f"Augmentation removed all boxes for image {example['image_id']}. Using original."
+    #                         )
+
+    #             # Prepare target annotations
+    #             target = {
+    #                 "image_id": example["image_id"],
+    #                 "annotations": [
+    #                     {
+    #                         "bbox": self.xyxy_to_xywh(box),
+    #                         "category_id": label,
+    #                         "area": max(0.0, (box[2] - box[0]) * (box[3] - box[1])),
+    #                         "iscrowd": 0,
+    #                     }
+    #                     for box, label in zip(bboxes, category_ids)
+    #                 ],
+    #             }
+
+    #             # Process the image and annotations
+    #             encoding = self.processor(
+    #                 images=image_np, annotations=target, return_tensors="pt"
+    #             )
+
+    #             pixel_values.append(encoding["pixel_values"].squeeze())
+    #             labels.append(encoding["labels"][0])
+
+    #         except Exception as e:
+    #             print(
+    #                 f"Skipping corrupted sample {example.get('image_id', 'unknown')}: {e}"
+    #             )
+    #             continue
+
+    #     if not pixel_values:
+    #         return {}
+
+    #     return {"pixel_values": torch.stack(pixel_values), "labels": labels}
 
 
 ANNOTATION_PATH = (
