@@ -547,8 +547,8 @@ for i, layer in enumerate(model.model.decoder.class_embed):
 # IMPROVED TRAINING ARGUMENTS
 training_args = TrainingArguments(
     output_dir="./outputs",
-    per_device_train_batch_size=64,
-    per_device_eval_batch_size=64,
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=32,
     num_train_epochs=70,
     learning_rate=5e-4,
     max_grad_norm=1.0,
