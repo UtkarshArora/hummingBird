@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=12
-#SBATCH --time=15:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=85GB
 #SBATCH --gres=gpu:a100:1
 #SBATCH --job-name=trainHbird

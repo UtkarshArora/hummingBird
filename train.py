@@ -505,7 +505,9 @@ PRIOR_PROB = 0.01
 bias_value = -math.log((1 - PRIOR_PROB) / PRIOR_PROB)
 
 
-model.enc_score_head = torch.nn.Linear(base_model.model.enc_score_head.in_features, 1)
+model.model.enc_score_head = torch.nn.Linear(
+    base_model.model.enc_score_head.in_features, 1
+)
 torch.nn.init.normal_(model.model.enc_score_head.weight, std=0.01)
 torch.nn.init.constant_(model.model.enc_score_head.bias, bias_value)
 
