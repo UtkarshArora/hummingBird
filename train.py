@@ -476,8 +476,11 @@ def load_coco_dataset(image_dir, annotation_file):
     return dataset_entries
 
 
-TRAIN_ANNOTATIONS = "./Label-Birdfeeder-Camera-Observations-3/train_split.json"
-TEST_ANNOTATIONS = "./Label-Birdfeeder-Camera-Observations-3/valid_split.json"
+# TRAIN_ANNOTATIONS = "./Label-Birdfeeder-Camera-Observations-3/train_split.json"
+# TEST_ANNOTATIONS = "./Label-Birdfeeder-Camera-Observations-3/valid_split.json"
+
+TRAIN_ANNOTATIONS = "./Label-Birdfeeder-Camera-Observations-3/hb_train_split.json"
+TEST_ANNOTATIONS = "./Label-Birdfeeder-Camera-Observations-3/hb_valid_split.json"
 
 print("Loading training dataset...")
 train_data = load_coco_dataset(TRAIN_IMAGE_DIR, TRAIN_ANNOTATIONS)
