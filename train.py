@@ -152,227 +152,270 @@ print(f"Using device: {device}")
 TRAIN_IMAGE_DIR = "./Label-Birdfeeder-Camera-Observations-3/train"
 
 
-class RTDetrDataCollatorWithAugmentation:
+# class RTDetrDataCollatorWithAugmentation:
 
-    @staticmethod
-    def xyxy_to_xywh(box):
-        x1, y1, x2, y2 = box
-        return [x1, y1, max(0.0, x2 - x1), max(0.0, y2 - y1)]
+#     @staticmethod
+#     def xyxy_to_xywh(box):
+#         x1, y1, x2, y2 = box
+#         return [x1, y1, max(0.0, x2 - x1), max(0.0, y2 - y1)]
 
-    # Transforming the images while training so that the model learns better
-    # removing the transformations for now, setting is_training to False
-    def __init__(self, processor, is_training=False):
-        self.processor = processor
-        self.is_training = is_training
+#     # Transforming the images while training so that the model learns better
+#     # removing the transformations for now, setting is_training to False
+#     def __init__(self, processor, is_training=False):
+#         self.processor = processor
+#         self.is_training = is_training
 
-        if self.is_training:
-            self.transform = A.Compose(
-                [
-                    A.VerticalFlip(p=0.3),
-                    A.HorizontalFlip(p=0.5),
-                    A.RandomRotate90(p=0.5),
-                    A.Rotate(limit=15, p=0.5),
-                    A.Affine(scale=(0.9, 1.1), translate_percent=0.1, p=0.3),
-                    A.ColorJitter(
-                        brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1, p=0.7
-                    ),
-                    A.RandomBrightnessContrast(p=0.5),
-                    A.OneOf(
-                        [
-                            A.Blur(blur_limit=5, p=1.0),
-                            A.GaussianBlur(blur_limit=(3, 5), p=1.0),
-                            A.MotionBlur(blur_limit=5, p=1.0),
-                        ],
-                        p=0.3,
-                    ),
-                    # A.GaussNoise(var_limit=(0.01, 0.05), p=0.2),
-                    A.HueSaturationValue(
-                        hue_shift_limit=10,
-                        sat_shift_limit=20,
-                        val_shift_limit=20,
-                        p=0.5,
-                    ),
-                    A.Blur(blur_limit=3, p=0.1),
-                    A.RandomResizedCrop(size=(640, 640), scale=(0.8, 1.0), p=0.5),
-                    A.RandomShadow(p=0.2),
-                    A.RandomFog(p=0.1),
-                ],
-                bbox_params=A.BboxParams(
-                    format="pascal_voc",
-                    label_fields=["category_ids"],
-                    min_visibility=0.3,
-                    min_area=25,
-                ),
-            )
-        else:
-            self.transform = None
+#         if self.is_training:
+#             self.transform = A.Compose(
+#                 [
+#                     A.VerticalFlip(p=0.3),
+#                     A.HorizontalFlip(p=0.5),
+#                     A.RandomRotate90(p=0.5),
+#                     A.Rotate(limit=15, p=0.5),
+#                     A.Affine(scale=(0.9, 1.1), translate_percent=0.1, p=0.3),
+#                     A.ColorJitter(
+#                         brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1, p=0.7
+#                     ),
+#                     A.RandomBrightnessContrast(p=0.5),
+#                     A.OneOf(
+#                         [
+#                             A.Blur(blur_limit=5, p=1.0),
+#                             A.GaussianBlur(blur_limit=(3, 5), p=1.0),
+#                             A.MotionBlur(blur_limit=5, p=1.0),
+#                         ],
+#                         p=0.3,
+#                     ),
+#                     # A.GaussNoise(var_limit=(0.01, 0.05), p=0.2),
+#                     A.HueSaturationValue(
+#                         hue_shift_limit=10,
+#                         sat_shift_limit=20,
+#                         val_shift_limit=20,
+#                         p=0.5,
+#                     ),
+#                     A.Blur(blur_limit=3, p=0.1),
+#                     A.RandomResizedCrop(size=(640, 640), scale=(0.8, 1.0), p=0.5),
+#                     A.RandomShadow(p=0.2),
+#                     A.RandomFog(p=0.1),
+#                 ],
+#                 bbox_params=A.BboxParams(
+#                     format="pascal_voc",
+#                     label_fields=["category_ids"],
+#                     min_visibility=0.3,
+#                     min_area=25,
+#                 ),
+#             )
+#         else:
+#             self.transform = None
 
-    def __call__(self, batch):
-        pixel_values = []
-        labels = []
+#     def __call__(self, batch):
+#         pixel_values = []
+#         labels = []
 
-        for example in batch:
-            try:
-                image = Image.open(example["image_path"]).convert("RGB")
-                image_np = np.array(image)
-                orig_image_np = image_np.copy()
+#         for example in batch:
+#             try:
+#                 image = Image.open(example["image_path"]).convert("RGB")
+#                 image_np = np.array(image)
+#                 orig_image_np = image_np.copy()
 
-                # Get image dimensions for clipping
-                img_height, img_width = image_np.shape[:2]
+#                 # Get image dimensions for clipping
+#                 img_height, img_width = image_np.shape[:2]
 
-                bboxes = example["objects"]["bbox"]
-                category_ids = example["objects"]["category_id"]
-                orig_bboxes = bboxes.copy()
-                orig_category_ids = category_ids.copy()
+#                 bboxes = example["objects"]["bbox"]
+#                 category_ids = example["objects"]["category_id"]
+#                 orig_bboxes = bboxes.copy()
+#                 orig_category_ids = category_ids.copy()
 
-                # Apply augmentation only during training
-                apply_aug = self.is_training and torch.is_grad_enabled()
-                if apply_aug and self.transform:
-                    transformed = self.transform(
-                        image=image_np, bboxes=bboxes, category_ids=category_ids
-                    )
+#                 # Apply augmentation only during training
+#                 apply_aug = self.is_training and torch.is_grad_enabled()
+#                 if apply_aug and self.transform:
+#                     transformed = self.transform(
+#                         image=image_np, bboxes=bboxes, category_ids=category_ids
+#                     )
 
-                    if len(transformed["bboxes"]) > 0:
-                        image_np = transformed["image"]
-                        bboxes = transformed["bboxes"]
-                        category_ids = transformed["category_ids"]
+#                     if len(transformed["bboxes"]) > 0:
+#                         image_np = transformed["image"]
+#                         bboxes = transformed["bboxes"]
+#                         category_ids = transformed["category_ids"]
 
-                        # Get NEW image dimensions after augmentation
-                        aug_height, aug_width = image_np.shape[:2]
+#                         # Get NEW image dimensions after augmentation
+#                         aug_height, aug_width = image_np.shape[:2]
 
-                        # FIXED: Clip to actual pixel dimensions, not [0,1]
-                        bboxes = [
-                            [
-                                max(0.0, min(aug_width, x1)),
-                                max(0.0, min(aug_height, y1)),
-                                max(0.0, min(aug_width, x2)),
-                                max(0.0, min(aug_height, y2)),
-                            ]
-                            for x1, y1, x2, y2 in bboxes
-                        ]
-                    else:
-                        image_np = orig_image_np
-                        bboxes = orig_bboxes
-                        category_ids = orig_category_ids
+#                         # FIXED: Clip to actual pixel dimensions, not [0,1]
+#                         bboxes = [
+#                             [
+#                                 max(0.0, min(aug_width, x1)),
+#                                 max(0.0, min(aug_height, y1)),
+#                                 max(0.0, min(aug_width, x2)),
+#                                 max(0.0, min(aug_height, y2)),
+#                             ]
+#                             for x1, y1, x2, y2 in bboxes
+#                         ]
+#                     else:
+#                         image_np = orig_image_np
+#                         bboxes = orig_bboxes
+#                         category_ids = orig_category_ids
 
-                        if random.random() < 0.01:
-                            print(
-                                f"Augmentation removed all boxes for image {example['image_id']}. Using original."
-                            )
+#                         if random.random() < 0.01:
+#                             print(
+#                                 f"Augmentation removed all boxes for image {example['image_id']}. Using original."
+#                             )
 
-                # Prepare target annotations
-                target = {
-                    "image_id": example["image_id"],
-                    "annotations": [
-                        {
-                            "bbox": self.xyxy_to_xywh(box),
-                            "category_id": label,
-                            "area": max(0.0, (box[2] - box[0]) * (box[3] - box[1])),
-                            "iscrowd": 0,
-                        }
-                        for box, label in zip(bboxes, category_ids)
+#                 # Prepare target annotations
+#                 target = {
+#                     "image_id": example["image_id"],
+#                     "annotations": [
+#                         {
+#                             "bbox": self.xyxy_to_xywh(box),
+#                             "category_id": label,
+#                             "area": max(0.0, (box[2] - box[0]) * (box[3] - box[1])),
+#                             "iscrowd": 0,
+#                         }
+#                         for box, label in zip(bboxes, category_ids)
+#                     ],
+#                 }
+
+#                 encoding = self.processor(
+#                     images=image_np, annotations=target, return_tensors="pt"
+#                 )
+
+#                 pixel_values.append(encoding["pixel_values"].squeeze())
+#                 labels.append(encoding["labels"][0])
+
+#             except Exception as e:
+#                 print(
+#                     f"Skipping corrupted sample {example.get('image_id', 'unknown')}: {e}"
+#                 )
+#                 continue
+
+#         if not pixel_values:
+#             return {}
+
+#         return {"pixel_values": torch.stack(pixel_values), "labels": labels}
+
+# def __call__(self, batch):
+#     pixel_values = []
+#     labels = []
+
+#     for example in batch:
+#         try:
+#             image = Image.open(example["image_path"]).convert("RGB")
+#             image_np = np.array(image)
+#             orig_image_np = image_np.copy()  # Save original image
+
+#             bboxes = example["objects"]["bbox"]
+#             # bboxes = np.clip(bboxes, 0.0, 1.0)
+#             category_ids = example["objects"]["category_id"]
+#             orig_bboxes = bboxes.copy()  # Save original bboxes
+#             orig_category_ids = category_ids.copy()  # Save original categories
+
+#             # Apply augmentation only during training
+#             apply_aug = self.is_training and torch.is_grad_enabled()
+#             if apply_aug and self.transform:
+#                 transformed = self.transform(
+#                     image=image_np, bboxes=bboxes, category_ids=category_ids
+#                 )
+
+#                 # Only use augmented result if there's at least one valid box
+#                 if len(transformed["bboxes"]) > 0:
+#                     image_np = transformed["image"]
+#                     bboxes = transformed["bboxes"]
+#                     category_ids = transformed["category_ids"]
+#                     bboxes = [
+#                         [
+#                             max(0.0, min(1.0, x1)),
+#                             max(0.0, min(1.0, y1)),
+#                             max(0.0, min(1.0, x2)),
+#                             max(0.0, min(1.0, y2)),
+#                         ]
+#                         for x1, y1, x2, y2 in bboxes
+#                     ]
+#                 else:
+#                     # Restore original image and boxes
+#                     image_np = orig_image_np
+#                     bboxes = orig_bboxes
+#                     category_ids = orig_category_ids
+
+#                     # Reduce log spam - only show 1% of warnings
+#                     if random.random() < 0.01:
+#                         print(
+#                             f"Augmentation removed all boxes for image {example['image_id']}. Using original."
+#                         )
+
+#             # Prepare target annotations
+#             target = {
+#                 "image_id": example["image_id"],
+#                 "annotations": [
+#                     {
+#                         "bbox": self.xyxy_to_xywh(box),
+#                         "category_id": label,
+#                         "area": max(0.0, (box[2] - box[0]) * (box[3] - box[1])),
+#                         "iscrowd": 0,
+#                     }
+#                     for box, label in zip(bboxes, category_ids)
+#                 ],
+#             }
+
+#             # Process the image and annotations
+#             encoding = self.processor(
+#                 images=image_np, annotations=target, return_tensors="pt"
+#             )
+
+#             pixel_values.append(encoding["pixel_values"].squeeze())
+#             labels.append(encoding["labels"][0])
+
+#         except Exception as e:
+#             print(
+#                 f"Skipping corrupted sample {example.get('image_id', 'unknown')}: {e}"
+#             )
+#             continue
+
+#     if not pixel_values:
+#         return {}
+
+#     return {"pixel_values": torch.stack(pixel_values), "labels": labels}
+
+
+def simple_rtdetr_collator(batch):
+    pixel_values = []
+    labels = []
+
+    for example in batch:
+        image = Image.open(example["image_path"]).convert("RGB")
+
+        target = {
+            "image_id": example["image_id"],
+            "annotations": [
+                {
+                    "bbox": [
+                        box[0],
+                        box[1],
+                        box[2] - box[0],
+                        box[3] - box[1],
                     ],
+                    "category_id": label,
+                    "area": max(1.0, (box[2] - box[0]) * (box[3] - box[1])),
+                    "iscrowd": 0,
                 }
-
-                encoding = self.processor(
-                    images=image_np, annotations=target, return_tensors="pt"
+                for box, label in zip(
+                    example["objects"]["bbox"],
+                    example["objects"]["category_id"],
                 )
+            ],
+        }
 
-                pixel_values.append(encoding["pixel_values"].squeeze())
-                labels.append(encoding["labels"][0])
+        encoding = processor(
+            images=image,
+            annotations=target,
+            return_tensors="pt",
+        )
 
-            except Exception as e:
-                print(
-                    f"Skipping corrupted sample {example.get('image_id', 'unknown')}: {e}"
-                )
-                continue
+        pixel_values.append(encoding["pixel_values"].squeeze(0))
+        labels.append(encoding["labels"][0])
 
-        if not pixel_values:
-            return {}
-
-        return {"pixel_values": torch.stack(pixel_values), "labels": labels}
-
-    # def __call__(self, batch):
-    #     pixel_values = []
-    #     labels = []
-
-    #     for example in batch:
-    #         try:
-    #             image = Image.open(example["image_path"]).convert("RGB")
-    #             image_np = np.array(image)
-    #             orig_image_np = image_np.copy()  # Save original image
-
-    #             bboxes = example["objects"]["bbox"]
-    #             # bboxes = np.clip(bboxes, 0.0, 1.0)
-    #             category_ids = example["objects"]["category_id"]
-    #             orig_bboxes = bboxes.copy()  # Save original bboxes
-    #             orig_category_ids = category_ids.copy()  # Save original categories
-
-    #             # Apply augmentation only during training
-    #             apply_aug = self.is_training and torch.is_grad_enabled()
-    #             if apply_aug and self.transform:
-    #                 transformed = self.transform(
-    #                     image=image_np, bboxes=bboxes, category_ids=category_ids
-    #                 )
-
-    #                 # Only use augmented result if there's at least one valid box
-    #                 if len(transformed["bboxes"]) > 0:
-    #                     image_np = transformed["image"]
-    #                     bboxes = transformed["bboxes"]
-    #                     category_ids = transformed["category_ids"]
-    #                     bboxes = [
-    #                         [
-    #                             max(0.0, min(1.0, x1)),
-    #                             max(0.0, min(1.0, y1)),
-    #                             max(0.0, min(1.0, x2)),
-    #                             max(0.0, min(1.0, y2)),
-    #                         ]
-    #                         for x1, y1, x2, y2 in bboxes
-    #                     ]
-    #                 else:
-    #                     # Restore original image and boxes
-    #                     image_np = orig_image_np
-    #                     bboxes = orig_bboxes
-    #                     category_ids = orig_category_ids
-
-    #                     # Reduce log spam - only show 1% of warnings
-    #                     if random.random() < 0.01:
-    #                         print(
-    #                             f"Augmentation removed all boxes for image {example['image_id']}. Using original."
-    #                         )
-
-    #             # Prepare target annotations
-    #             target = {
-    #                 "image_id": example["image_id"],
-    #                 "annotations": [
-    #                     {
-    #                         "bbox": self.xyxy_to_xywh(box),
-    #                         "category_id": label,
-    #                         "area": max(0.0, (box[2] - box[0]) * (box[3] - box[1])),
-    #                         "iscrowd": 0,
-    #                     }
-    #                     for box, label in zip(bboxes, category_ids)
-    #                 ],
-    #             }
-
-    #             # Process the image and annotations
-    #             encoding = self.processor(
-    #                 images=image_np, annotations=target, return_tensors="pt"
-    #             )
-
-    #             pixel_values.append(encoding["pixel_values"].squeeze())
-    #             labels.append(encoding["labels"][0])
-
-    #         except Exception as e:
-    #             print(
-    #                 f"Skipping corrupted sample {example.get('image_id', 'unknown')}: {e}"
-    #             )
-    #             continue
-
-    #     if not pixel_values:
-    #         return {}
-
-    #     return {"pixel_values": torch.stack(pixel_values), "labels": labels}
+    return {
+        "pixel_values": torch.stack(pixel_values),
+        "labels": labels,
+    }
 
 
 ANNOTATION_PATH = (
@@ -583,12 +626,15 @@ training_args = TrainingArguments(
 )
 
 
-train_data_collator = RTDetrDataCollatorWithAugmentation(
-    processor=processor, is_training=True
-)
-eval_data_collator = RTDetrDataCollatorWithAugmentation(
-    processor=processor, is_training=False
-)
+# train_data_collator = RTDetrDataCollatorWithAugmentation(
+#     processor=processor, is_training=True
+# )
+# eval_data_collator = RTDetrDataCollatorWithAugmentation(
+#     processor=processor, is_training=False
+# )
+
+train_data_collator = simple_rtdetr_collator
+eval_data_collator = simple_rtdetr_collator
 
 trainer = Trainer(
     model=model,
