@@ -375,47 +375,75 @@ TRAIN_IMAGE_DIR = "./Label-Birdfeeder-Camera-Observations-3/train"
 #     return {"pixel_values": torch.stack(pixel_values), "labels": labels}
 
 
+# def simple_rtdetr_collator(batch):
+#     pixel_values = []
+#     labels = []
+
+#     for example in batch:
+#         image = Image.open(example["image_path"]).convert("RGB")
+
+#         target = {
+#             "image_id": example["image_id"],
+#             "annotations": [
+#                 {
+#                     "bbox": [
+#                         box[0],
+#                         box[1],
+#                         box[2] - box[0],
+#                         box[3] - box[1],
+#                     ],
+#                     "category_id": label,
+#                     "area": max(1.0, (box[2] - box[0]) * (box[3] - box[1])),
+#                     "iscrowd": 0,
+#                 }
+#                 for box, label in zip(
+#                     example["objects"]["bbox"],
+#                     example["objects"]["category_id"],
+#                 )
+#             ],
+#         }
+
+#         encoding = processor(
+#             images=image,
+#             annotations=target,
+#             return_tensors="pt",
+#         )
+
+#         pixel_values.append(encoding["pixel_values"].squeeze(0))
+#         labels.append(encoding["labels"][0])
+
+#     return {
+#         "pixel_values": torch.stack(pixel_values),
+#         "labels": labels,
+#     }
+
+
 def simple_rtdetr_collator(batch):
-    pixel_values = []
-    labels = []
+    images = []
+    targets = []
 
-    for example in batch:
-        image = Image.open(example["image_path"]).convert("RGB")
+    for ex in batch:
+        images.append(Image.open(ex["image_path"]).convert("RGB"))
 
-        target = {
-            "image_id": example["image_id"],
-            "annotations": [
-                {
-                    "bbox": [
-                        box[0],
-                        box[1],
-                        box[2] - box[0],
-                        box[3] - box[1],
-                    ],
-                    "category_id": label,
-                    "area": max(1.0, (box[2] - box[0]) * (box[3] - box[1])),
-                    "iscrowd": 0,
-                }
-                for box, label in zip(
-                    example["objects"]["bbox"],
-                    example["objects"]["category_id"],
-                )
-            ],
-        }
-
-        encoding = processor(
-            images=image,
-            annotations=target,
-            return_tensors="pt",
+        targets.append(
+            {
+                "image_id": ex["image_id"],
+                "annotations": [
+                    {
+                        "bbox": [x1, y1, x2 - x1, y2 - y1],
+                        "category_id": int(label),
+                        "area": max(1.0, (x2 - x1) * (y2 - y1)),
+                        "iscrowd": 0,
+                    }
+                    for (x1, y1, x2, y2), label in zip(
+                        ex["objects"]["bbox"], ex["objects"]["category_id"]
+                    )
+                ],
+            }
         )
 
-        pixel_values.append(encoding["pixel_values"].squeeze(0))
-        labels.append(encoding["labels"][0])
-
-    return {
-        "pixel_values": torch.stack(pixel_values),
-        "labels": labels,
-    }
+    enc = processor(images=images, annotations=targets, return_tensors="pt")
+    return {"pixel_values": enc["pixel_values"], "labels": list(enc["labels"])}
 
 
 ANNOTATION_PATH = (
@@ -480,8 +508,18 @@ def remap_category_ids(json_path):
 
 
 # Run after split
-remap_category_ids(os.path.join(OUTPUT_DIR, "train_split.json"))
-remap_category_ids(os.path.join(OUTPUT_DIR, "valid_split.json"))
+train_split_path = os.path.join(OUTPUT_DIR, "train_split.json")
+valid_split_path = os.path.join(OUTPUT_DIR, "valid_split.json")
+
+if not (os.path.exists(train_split_path) and os.path.exists(valid_split_path)):
+    # do the split + write
+    ...
+    remap_category_ids(train_split_path)
+    remap_category_ids(valid_split_path)
+    print("✅ category_id=2 changed to 0 in both split files.")
+
+# remap_category_ids(os.path.join(OUTPUT_DIR, "train_split.json"))
+# remap_category_ids(os.path.join(OUTPUT_DIR, "valid_split.json"))
 print("✅ category_id=2 changed to 0 in both split files.")
 
 
@@ -593,36 +631,44 @@ for i, layer in enumerate(model.model.decoder.class_embed):
 # model.to(device)
 
 # IMPROVED TRAINING ARGUMENTS
+
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+torch.backends.cudnn.benchmark = True
+
+
 training_args = TrainingArguments(
     output_dir="./outputs_hb_finetune",
-    per_device_train_batch_size=128,
-    per_device_eval_batch_size=128,
+    per_device_train_batch_size=8,
+    per_device_eval_batch_size=8,
     num_train_epochs=70,
     learning_rate=5e-4,
     max_grad_norm=1.0,
     weight_decay=0.01,
     logging_steps=10,
     save_strategy="steps",
-    save_steps=500,
+    save_steps=50,
     remove_unused_columns=False,
     dataloader_num_workers=8,
     save_total_limit=5,
     load_best_model_at_end=True,
     eval_strategy="steps",
-    eval_steps=500,
-    warmup_steps=500,
-    warmup_ratio=0.1,
+    eval_steps=50,
+    warmup_steps=25,
+    warmup_ratio=0.0,
     lr_scheduler_type="cosine",
     report_to="none",
-    gradient_accumulation_steps=2,
+    gradient_accumulation_steps=16,
     dataloader_drop_last=False,
     seed=42,
-    fp16=torch.cuda.is_available(),
+    bf16=torch.cuda.is_available(),
+    fp16=False,
+    # fp16=torch.cuda.is_available(),
     metric_for_best_model="eval_loss",
     greater_is_better=False,
-    tf32=False,
+    tf32=True,
     torch_compile=False,
-    dataloader_pin_memory=False,
+    dataloader_pin_memory=True,
 )
 
 
@@ -642,27 +688,56 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=test_dataset,
     data_collator=train_data_collator,
-    callbacks=[SystemStatsCallback(log_every_n_steps=50)],
+    callbacks=[SystemStatsCallback(log_every_n_steps=100)],
 )
 
 
+# def train_with_checkpoint_resume(trainer, training_args):
+#     """Train and automatically resume from checkpoint if it exists."""
+#     checkpoint_dir = Path(training_args.output_dir)
+#     checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+#     # Find latest checkpoint
+#     checkpoints = sorted(
+#         checkpoint_dir.glob("checkpoint-*"), key=lambda p: int(p.name.split("-")[-1])
+#     )
+
+#     if checkpoints:
+#         last_ckpt = str(checkpoints[-1])
+#         print(f"✅ Resuming training from checkpoint: {last_ckpt}")
+#         trainer.train(resume_from_checkpoint=last_ckpt)
+#     else:
+#         print("🆕 No checkpoint found. Starting fresh training...")
+#         trainer.train()
+
+
 def train_with_checkpoint_resume(trainer, training_args):
-    """Train and automatically resume from checkpoint if it exists."""
     checkpoint_dir = Path(training_args.output_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-    # Find latest checkpoint
     checkpoints = sorted(
         checkpoint_dir.glob("checkpoint-*"), key=lambda p: int(p.name.split("-")[-1])
     )
 
-    if checkpoints:
-        last_ckpt = str(checkpoints[-1])
-        print(f"✅ Resuming training from checkpoint: {last_ckpt}")
-        trainer.train(resume_from_checkpoint=last_ckpt)
-    else:
+    if not checkpoints:
         print("🆕 No checkpoint found. Starting fresh training...")
         trainer.train()
+        return
+
+    last_ckpt = str(checkpoints[-1])
+    print(f"✅ Resuming training from checkpoint: {last_ckpt}")
+
+    try:
+        trainer.train(resume_from_checkpoint=last_ckpt)
+    except ValueError as e:
+        print(f"⚠️ Resume failed (optimizer mismatch). Restarting optimizer. Error: {e}")
+        opt = Path(last_ckpt) / "optimizer.pt"
+        sch = Path(last_ckpt) / "scheduler.pt"
+        if opt.exists():
+            opt.unlink()
+        if sch.exists():
+            sch.unlink()
+        trainer.train(resume_from_checkpoint=last_ckpt)
 
 
 """
